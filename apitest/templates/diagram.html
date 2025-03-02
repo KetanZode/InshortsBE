@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ER Diagram (Zoom & Pan)</title>
+
+    <!-- Load Mermaid.js -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        document.addEventListener("DOMContentLoaded", function () {
+            mermaid.initialize({ startOnLoad: false });
+
+            // Initialize Mermaid.js
+            mermaid.init(undefined, document.querySelectorAll(".mermaid"));
+
+            // Enable Zoom & Pan
+            const zoomContainer = document.getElementById("mermaid-container");
+            zoomContainer.addEventListener("wheel", function (event) {
+                event.preventDefault();
+                const scale = event.deltaY > 0 ? 0.9 : 1.1;
+                zoomContainer.style.transform = `scale(${scale})`;
+            });
+
+            let isDragging = false;
+            let startX, startY, scrollLeft, scrollTop;
+
+            zoomContainer.addEventListener("mousedown", (e) => {
+                isDragging = true;
+                startX = e.pageX - zoomContainer.offsetLeft;
+                startY = e.pageY - zoomContainer.offsetTop;
+                scrollLeft = zoomContainer.scrollLeft;
+                scrollTop = zoomContainer.scrollTop;
+            });
+
+            zoomContainer.addEventListener("mousemove", (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+                const x = e.pageX - zoomContainer.offsetLeft;
+                const y = e.pageY - zoomContainer.offsetTop;
+                const walkX = (x - startX) * 1.5; // Adjust for panning speed
+                const walkY = (y - startY) * 1.5;
+                zoomContainer.scrollLeft = scrollLeft - walkX;
+                zoomContainer.scrollTop = scrollTop - walkY;
+            });
+
+            zoomContainer.addEventListener("mouseup", () => {
+                isDragging = false;
+            });
+
+            zoomContainer.addEventListener("mouseleave", () => {
+                isDragging = false;
+            });
+        });
+    </script>
+
+    <style>
+        body {
+            background-color: #121212;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        h2 {
+            color: #ffcc00;
+        }
+
+        /* Zoom & Pan Container */
+        #mermaid-container {
+            width: 100%;
+            height: 600px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            border: 2px solid #ffcc00;
+            margin-top: 20px;
+            cursor: grab;
+        }
+
+        #mermaid-container:active {
+            cursor: grabbing;
+        }
+
+        .mermaid {
+            transform-origin: center center;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>ER Diagram (Zoom & Pan)</h2>
+
+    <!-- Mermaid.js Diagram (inside zoom & pan container) -->
+    <div id="mermaid-container">
+        <pre class="mermaid">
+{{ mermaid_er|safe }}
+        </pre>
+    </div>
+
+</body>
+</html>
