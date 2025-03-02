@@ -41,7 +41,7 @@ class FetchArticle(APIView):
             "language__name":lang,
         }
         response = {}
-        articles = Article.objects.filter(**filter).order_by('-id')
+        articles = Article.objects.filter(**filter).order_by('id')
         count    = Article.objects.filter(**filter).count()
         print(size*page, size*(page-1), count)
         if size*(page-1)>count:
