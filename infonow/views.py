@@ -43,13 +43,16 @@ class FetchArticle(APIView):
         response = {}
         articles = Article.objects.filter(**filter).order_by('id')
         count    = Article.objects.filter(**filter).count()
-        print(size*page, size*(page-1), count)
-        if size*(page-1)>count:
-            return Response('All the items are not fetched for this selection', status=400)
+        all_count= Article.objects.count()
+        # print(size*page, size*(page-1), count)
+        # if size*(page-1)>count:
+        #     return Response('All the items are not fetched for this selection', status=400)
+        print(page, (size*(page-1))%count) 
         paginator           = Paginator(articles, size)
-        articles            = paginator.get_page(page)
+        articles            = paginator.get_page((size*(page))%count)
         response["data"]    = ArticleFetchSerializer(articles, many=True).data
         response["count"]   = count
+        response["all_count"]   = all_count
         return Response(response, status=200)
 
 @infonowRouter.route
