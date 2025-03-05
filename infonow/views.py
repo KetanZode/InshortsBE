@@ -28,7 +28,7 @@ class FetchArticle(APIView):
         page = int(request.GET.get('page',1))
         lang = request.GET.get('lang','English')
         cat  = request.GET.get('category',"")
-        size = request.GET.get('size',2)
+        size = request.GET.get('size',10)
         print(cat, lang, page)
         if id is not None:
             try:
