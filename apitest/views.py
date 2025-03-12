@@ -11,7 +11,6 @@ class GetModels(APIView):
         data        = request.data
         p_apps      = data.get('apps',[])
         app_list    = [x for x in apps.all_models]
-        print(app_list)
         all_res     = {}
 
         for app in p_apps:
@@ -105,74 +104,6 @@ class GetModels2(APIView):
 
         return Response(json.loads(json.dumps(response_data)))
 
-
-
-class GetMermaidERDiagram( View):
-    def post(self, request):
-        data = request.data
-        requested_apps = data.get('apps', [])  # List of requested app names
-
-        # Get all installed Django apps
-        available_apps = {app_config.label for app_config in apps.get_app_configs()}
-
-        entities = []  # Stores table definitions
-        relationships = []  # Stores relationships
-        errors = {}
-
-        for app in requested_apps:
-            if app not in available_apps:
-                errors[app] = f"App '{app}' not found."
-                continue  # Skip to the next app instead of stopping execution
-
-            models = apps.get_app_config(app).get_models()
-
-            for model in models:
-                model_name = model.__name__
-                try:
-                    # Retrieve the model dynamically
-                    model = apps.get_model(app, model_name)
-
-                    # Table definition
-                    table_def = f"    {model_name} {{"
-
-                    for field in model._meta.get_fields():
-                        field_type = field.get_internal_type()
-                        field_constraints = []
-
-                        if getattr('field','PK',False):
-                            field_constraints.append("PK")
-                        if getattr(field, "unique", False):
-                            field_constraints.append("UNIQUE")
-                        if field.null:
-                            field_constraints.append("NULL")
-
-                        constraints = " ".join(field_constraints).strip()
-                        table_def += f"\n        {field.name} {field_type} {constraints}"
-
-                        # Handle relationships
-                        if isinstance(field, ForeignKey):
-                            relationships.append(f"    {model_name} ||--|{{ {field.related_model.__name__} : \"{field.name}\" }}")
-                        elif isinstance(field, ManyToManyField):
-                            relationships.append(f"    {model_name} }}|--|{{ {field.related_model.__name__} : \"{field.name}\"  }}")
-                        elif isinstance(field, OneToOneField):
-                            relationships.append(f"    {model_name} ||--|| {field.related_model.__name__} : \"{field.name}\"")
-
-                    table_def += "\n    }"
-                    entities.append(table_def)
-                except LookupError:
-                    errors[f"{app}.{model_name}"] = f"Model '{model_name}' not found in app '{app}'."
-
-        # Generate Mermaid.js ER diagram syntax
-        mermaid_er = "erDiagram\n" + "\n".join(entities) + "\n" + "\n".join(relationships)
-        print('reached')
-        return render(request, 'diagram.html', {"mermaid_er": mermaid_er})
-        response_data = {"mermaid_er": mermaid_er}
-        if errors:
-            response_data["errors"] = errors  # Include errors if any app/model lookup failed
-
-        return Response(response_data)
-
-
 class RenderDiagram(View):
     def get(self, request):
         # Hardcoded Mermaid.js ER Diagram String (Properly formatted)
@@ -242,6 +173,132 @@ class RenderDiagram(View):
 
         # Generate Mermaid.js ER diagram syntax
         mermaid_er = "erDiagram\n" + "\n".join(entities) + "\n" + "\n".join(relationships)
-        print(mermaid_er)
-        print('reached')
         return render(request, 'diagram.html', {"mermaid_er": mermaid_er})
+ 
+class GetMermaidERDiagram( View):
+    def post(self, request):
+        data = request.data
+        requested_apps = data.get('apps', [])  # List of requested app names
+
+        # Get all installed Django apps
+        available_apps = {app_config.label for app_config in apps.get_app_configs()}
+
+        entities = []  # Stores table definitions
+        relationships = []  # Stores relationships
+        errors = {}
+
+        for app in requested_apps:
+            if app not in available_apps:
+                errors[app] = f"App '{app}' not found."
+                continue  # Skip to the next app instead of stopping execution
+
+            models = apps.get_app_config(app).get_models()
+
+            for model in models:
+                model_name = model.__name__
+                try:
+                    # Retrieve the model dynamically
+                    model = apps.get_model(app, model_name)
+
+                    # Table definition
+                    table_def = f"    {model_name} {{"
+
+                    for field in model._meta.get_fields():
+                        field_type = field.get_internal_type()
+                        field_constraints = []
+
+                        if getattr('field','PK',False):
+                            field_constraints.append("PK")
+                        if getattr(field, "unique", False):
+                            field_constraints.append("UNIQUE")
+                        if field.null:
+                            field_constraints.append("NULL")
+
+                        constraints = " ".join(field_constraints).strip()
+                        table_def += f"\n        {field.name} {field_type} {constraints}"
+
+                        # Handle relationships
+                        if isinstance(field, ForeignKey):
+                            relationships.append(f"    {model_name} ||--|{{ {field.related_model.__name__} : \"{field.name}\" }}")
+                        elif isinstance(field, ManyToManyField):
+                            relationships.append(f"    {model_name} }}|--|{{ {field.related_model.__name__} : \"{field.name}\"  }}")
+                        elif isinstance(field, OneToOneField):
+                            relationships.append(f"    {model_name} ||--|| {field.related_model.__name__} : \"{field.name}\"")
+
+                    table_def += "\n    }"
+                    entities.append(table_def)
+                except LookupError:
+                    errors[f"{app}.{model_name}"] = f"Model '{model_name}' not found in app '{app}'."
+
+        # Generate Mermaid.js ER diagram syntax
+        mermaid_er = "erDiagram\n" + "\n".join(entities) + "\n" + "\n".join(relationships)
+        return render(request, 'diagram.html', {"mermaid_er": mermaid_er})
+        response_data = {"mermaid_er": mermaid_er}
+        if errors:
+            response_data["errors"] = errors  # Include errors if any app/model lookup failed
+
+        return Response(response_data)
+
+class FetchModels(APIView):
+    def get(self, request):
+        data = {"models" : ['infonow', 'auth', 'admin']}
+        return Response(data, status=200)
+
+class FetchERDiagram(APIView):
+    def post(self, request):
+        mermaid_er = """erDiagram
+        Source {
+            id AutoField PK
+            name CharField UNIQUE
+            created_at DateTimeField
+            category ForeignKey
+            tags 
+        }
+        """
+        data = request.data
+        app = data.get('app')
+        available_apps = {app_config.label for app_config in apps.get_app_configs()}
+        entities = []  
+        relationships = []  
+
+        # for app in requested_apps:
+        if app not in available_apps:
+            return Response(f"App '{app}' not found." ,status=400)
+
+        models = apps.get_app_config(app).get_models()
+
+        for model in models:
+            model_name = model.__name__
+            try:
+                model = apps.get_model(app, model_name)
+
+                table_def = f"    {model_name} {{"
+
+                for field in model._meta.get_fields():
+                    field_type = field.get_internal_type()
+                    field_constraints = []
+
+                    if getattr('field','PK',False):
+                        field_constraints.append("PK")
+                    if getattr(field, "unique", False):
+                        field_constraints.append("UK")
+                    # if field.null:
+                    #     field_constraints.append("NULL")
+
+                    constraints = " ".join(field_constraints).strip()
+                    table_def += f"\n        {field.name} {field_type} {constraints}"
+
+                    # Handle relationships
+                    if isinstance(field, ForeignKey):
+                        relationships.append(f"    {model_name} ||--|{{ {field.related_model.__name__} : \"{field.name}\" ")
+                    elif isinstance(field, ManyToManyField):
+                        relationships.append(f"    {model_name} }}|--|{{ {field.related_model.__name__} : \"{field.name}\"")
+                    elif isinstance(field, OneToOneField):
+                        relationships.append(f"    {model_name} ||--|| {field.related_model.__name__} : \"{field.name}\"")
+
+                table_def += "\n    }"
+                entities.append(table_def)
+            except LookupError:
+                errors[f"{app}.{model_name}"] = f"Model '{model_name}' not found in app '{app}'."
+        mermaid_er = "erDiagram\n" + "\n".join(entities) + "\n" + "\n".join(relationships)
+        return Response({"mermaid_er": mermaid_er}, status=200)

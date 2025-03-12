@@ -24,7 +24,8 @@ urlpatterns = [
     path('apitest/', apiview.GetModels.as_view()),
     path('apitest2/', apiview.GetModels2.as_view()),
     path('render/', apiview.RenderDiagram.as_view()),
-    path('render2/', apiview.GetMermaidERDiagram.as_view()),
+    path('fetchdiagram/', apiview.FetchERDiagram.as_view()),
+    path('fetchmodels/', apiview.FetchModels.as_view()),
 ]
 urlpatterns += infonowRouter.urls
 
